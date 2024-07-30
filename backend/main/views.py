@@ -26,19 +26,30 @@ def retrieve_by_itemid(item_id):
         id=item_id,
         createdAt=response_items.json()["createdAt"],
         updatedAt=response_items.json()["updatedAt"],
+        connector=response_items.json()["connector"],
+        clientUserId=response_items.json()["clientUserId"]
     )
 
     # fetch accounts
     url_accounts = f"https://api.pluggy.ai/accounts?itemId={item_id}"
     response_accounts = requests.get(url_accounts, headers=headers)
+    accounts = response_accounts.json()["results"]
 
-    for account_data in response_accounts.json()["results"]:
-        print(28, account_data["id"])
+    for account_data in accounts:
         accountId = account_data["id"]
         account = Account.objects.create(
             id=accountId, item=item,
             createdAt=account_data["createdAt"],
             updatedAt=account_data["updatedAt"],
+            accountType=account_data["type"],
+            subtype=account_data["subtype"],
+            number=account_data["number"],
+            balance=account_data["balance"],
+            taxNumber=account_data["taxNumber"],
+            marketingName=account_data["marketingName"],
+            owner=account_data["owner"],
+            bankData=account_data["bankData"],
+            creditData=account_data["creditData"]
         )
 
         # fetch transactions
@@ -51,8 +62,15 @@ def retrieve_by_itemid(item_id):
                 id=transactionId, account=account,
                 createdAt=transaction_data["createdAt"],
                 updatedAt=transaction_data["updatedAt"],
+                date=transaction_data["date"],
+                merchant=transaction_data["merchant"],
+                description=transaction_data["description"],
+                currencyCode=transaction_data["currencyCode"],
+                amount=transaction_data["amount"],
+                category=transaction_data["category"],
+                categoryId=transaction_data["categoryId"],
+                transactionType=transaction_data["type"]
             )
-        print(35, response_transactions.json()["total"])
 
     return True
 
@@ -65,7 +83,6 @@ class ItemViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ItemSerializer
     @action(methods=['post'], detail=True)
     def fetch(self, request, pk=None):
-        print(12, "here", pk)
         return Response(retrieve_by_itemid(pk))
     
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
